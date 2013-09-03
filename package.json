@@ -1,5 +1,7 @@
 {
   "name": "nodeshift",
+  "version": "0.0.0",
+
   "main": "server.js",
 
   "engines": {
