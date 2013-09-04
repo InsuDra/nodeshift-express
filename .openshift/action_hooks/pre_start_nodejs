@@ -13,12 +13,25 @@
 # Application start and stop is subject to different timeouts
 # throughout the system.
 
+echo
+echo ":: Pre-Start"
 
 #  Source utility functions.
 source "$OPENSHIFT_REPO_DIR/.openshift/tools/custom_nodejs_version"
 
-#  Setup path to include the custom Node[.js] version.
-echo ""
+#  Setup path to include the custom Nodejs version.
 ver=$(get_node_version)
-echo "  - pre_start_nodejs: Adding Node.js version $ver binaries to path"
-_SHOW_SETUP_PATH_MESSAGES="true" setup_path_for_custom_node_version
+echo "  - Add Node.js version $ver binaries to path"
+setup_path_for_custom_node_version
+
+#  Export basic variables
+export NODE_ENV=development
+
+#  Include private env variables from a file in the 
+#  data directory of OpenShift. This directory is shared
+#  between different instances when your application is 
+#  set to scale. Sins the file might contains sensitive
+#  data it does not belong in any git repo.
+#source "$OPENSHIFT_DATA_DIR"/private_env_variables
+
+echo

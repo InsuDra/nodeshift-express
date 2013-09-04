@@ -5,10 +5,13 @@
 # up again.  This script gets executed directly, so it could be python, php,
 # ruby, etc.
 
+echo
+echo ":: Deploy"
 
 #  Source utility functions.
 source "$OPENSHIFT_REPO_DIR/.openshift/tools/custom_nodejs_version"
 
 #  Ensure custom node version if not installed.
-echo ""
 ensure_node_is_installed
+
+echo
