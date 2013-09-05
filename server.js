@@ -1,25 +1,89 @@
 
+var express = require('express');
 var http = require('http');
 
 /**
  * Grab the openshift ip and port for our 
- * public http server or default to localhost.
+ * public http server or default to localhost
  **/
 var ip = process.env.OPENSHIFT_NODEJS_IP ||
-         process.env.OPENSHIFT_INTERNAL_IP ||
+         process.env.NODEJS_IP ||
          '127.0.0.1';
 var port = process.env.OPENSHIFT_NODEJS_PORT ||
-           process.env.OPENSHIFT_INTERNAL_PORT ||
+           process.env.NODEJS_PORT ||
            8080;
 
 /**
- * Most basic server that will return a Hello world string,
- * with the custom nodejs version and our NODE_ENV setting
- * from the .openshift/action_hooks/pre_start_nodejs file.
+ * Setup express and a basic middlesware
+ * stack that includes custom error pages
  **/
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Hello OpenShift,\n' +
-          'Node.js: ' + process.version + '\n' +
-          'Running in ' + process.env.NODE_ENV + ' mode.');
-}).listen(port, ip);
+var serv = express();
+serv.set('views', './views');
+serv.set('view engine', 'jade');
+
+if (process.env.NODE_ENV === 'production'){
+  serv.disable('debug');
+} else {
+  serv.enable('debug');
+}
+
+serv.use(serv.router);
+serv.use(express.static('./public'));
+
+serv.use(function (err, req, res, next) {
+  console.error('Error: ' + err.message + ' - ' + req.url);
+  console.error(err.stack);
+
+  res.status(err.status || 500);
+  if (req.accepts('html')) {
+    res.set('Content-Type', 'text/html');
+    res.render('page/error', {
+      url: req.url,
+      error: err
+    });
+  } else if (req.accepts('json')) {
+    res.set('Content-Type', 'application/json');
+    res.json({
+      error: err.message
+    });
+  } else {
+    res.set('Content-Type', 'text/plain');
+    res.send('Server Error');
+  }
+});
+
+serv.use(function (req, res, next) {
+  console.error('Error: Route not found. - ' + req.url);
+
+  res.status(404);
+  if (req.accepts('html')) {
+    res.set('Content-Type', 'text/html');
+    res.render('page/error', {
+      url: req.url,
+      error: { 
+        status: 404,
+        message: 'Route not found.',
+      }
+    });
+  } else if (req.accepts('json')) {
+    res.set('Content-Type', 'application/json');
+    res.json({
+      error: err.message
+    });
+  } else {
+    res.set('Content-Type', 'text/plain');
+    res.send('404 - No content for ' + req.url);
+  }
+});
+
+/**
+ * Link our routes to the express server.
+ **/
+require('./routes/page').route(serv);
+
+/**
+ * Start http server with express
+ **/
+http.createServer(serv).listen(port, ip, function () {
+  console.log('Log: Server started on ' + ip + ':' + port);
+});

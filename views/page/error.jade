@@ -1,0 +1,21 @@
+extends layout
+block body
+
+  div
+    if (error.status)
+      strong= error.status + ' '
+
+    if (error.message)
+      span= error.message
+    else
+      span Unkown error
+
+  if (settings['debug'])
+    if (url)
+      div
+        span Path: #{url}
+
+    if (error.stack)
+      div
+        span Trance:
+        pre= error.stack
