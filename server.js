@@ -28,6 +28,7 @@ if (process.env.NODE_ENV === 'production'){
 }
 
 serv.use(serv.router);
+serv.use(express.favicon());
 serv.use(express.static('./public'));
 
 serv.use(function (err, req, res, next) {
