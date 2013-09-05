@@ -2,15 +2,12 @@ var get = {};
 
 // Route /, test home page
 get['/'] = function (req, res) {
-  var content = {
-    title: 'My Title',
-    brand: 'My Brand',
-    version: process.version,
-    envmode: process.env.NODE_ENV
-  };
+  // Add some info to content
+  req.content.version = process.version;
+  req.content.envmode = process.env.NODE_ENV;
 
   res.set('Content-Type', 'text/html');
-  res.render('page/home', content);
+  res.render('page/home', req.content);
 };
 
 // Route /404, test 404 page

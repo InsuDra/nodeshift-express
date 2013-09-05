@@ -27,21 +27,42 @@ if (process.env.NODE_ENV === 'production'){
   serv.enable('debug');
 }
 
-serv.use(serv.router);
+/**
+ * Add favicon and static files to stack
+ */
 serv.use(express.favicon());
 serv.use(express.static('./public'));
 
+/**
+ * Init the request with global info, this
+ * would be the place to manage sessions.
+ **/
+serv.use(function (req, res, next) {
+  req.content = {
+    title: 'A page title',
+    brand: 'Your brand name'
+  };
+
+  next();
+});
+
+/**
+ * Check routes before errors.
+ **/
+serv.use(serv.router);
+
+/**
+ * Error handler, runs when route returns a error.
+ **/
 serv.use(function (err, req, res, next) {
   console.error('Error: ' + err.message + ' - ' + req.url);
   console.error(err.stack);
 
   res.status(err.status || 500);
   if (req.accepts('html')) {
+    req.content.error = err;
     res.set('Content-Type', 'text/html');
-    res.render('page/error', {
-      url: req.url,
-      error: err
-    });
+    res.render('page/error', req.content);
   } else if (req.accepts('json')) {
     res.set('Content-Type', 'application/json');
     res.json({
@@ -49,31 +70,33 @@ serv.use(function (err, req, res, next) {
     });
   } else {
     res.set('Content-Type', 'text/plain');
-    res.send('Server Error');
+    res.send('Error: ' + err.message);
   }
 });
 
+/**
+ * Not found is the last module on the middleware stack, only 
+ * gets called if other modules don't deal with the request.
+ **/
 serv.use(function (req, res, next) {
-  console.error('Error: Route not found. - ' + req.url);
-
   res.status(404);
+  req.content.error = {};
+  req.content.error.status = 404;
+  req.content.error.message = "Route not found."
+
+  console.error('Error:' + req.content.error.message + ' - ' + req.url);
+
   if (req.accepts('html')) {
     res.set('Content-Type', 'text/html');
-    res.render('page/error', {
-      url: req.url,
-      error: { 
-        status: 404,
-        message: 'Route not found.',
-      }
-    });
+    res.render('page/error', req.content);
   } else if (req.accepts('json')) {
     res.set('Content-Type', 'application/json');
     res.json({
-      error: err.message
+      error: req.content.error.message
     });
   } else {
     res.set('Content-Type', 'text/plain');
-    res.send('404 - No content for ' + req.url);
+    res.send('Error: ' + req.content.error.message);
   }
 });
 
